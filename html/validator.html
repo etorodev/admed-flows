@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admed HTML Editor</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        #container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #editorSection,
+        #previewSection {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        #editorSection {
+            background-color: #f0f0f0;
+        }
+
+        #htmlInput {
+            flex: 1;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            border: none;
+            resize: none;
+            font-family: monospace;
+        }
+
+        #previewSection {
+            background-color: white;
+            padding: 20px;
+        }
+
+        #previewSection iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            box-sizing: border-box;
+        }
+
+        #downloadButton {
+            margin: 10px;
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #downloadButton:hover {
+            background-color: #1565c0;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+</head>
+
+<body onload="init();">
+    <div id="container">
+        <div id="editorSection">
+            <h2 style="text-align: center;">HTML Editor</h2>
+            <textarea id="htmlInput" oninput="updatePreview()"></textarea>
+            <button id="downloadButton" onclick="downloadPDF()">Download PDF</button>
+        </div>
+        <div id="previewSection">
+            <h2 style="text-align: center;">Preview</h2>
+            <iframe id="previewFrame">
+
+
+
+
+            </iframe>
+        </div>
+    </div>
+
+    <script>
+        var defaultStuff = '<h3>Welcome to the real-time HTML editor!</h3>\n<p>Type HTML in the textarea above, and it will magically appear in the frame below.</p>';
+        var old = '';
+
+        // Pregarcar el contenido de la página desde el parametro de la URL (?content=)
+        window.onload = function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const content = urlParams.get('content');
+
+            // decodificar de Base64 el contenido
+            if (content) {
+                let decodedString = atob(content);
+                defaultStuff = decodedString;
+                document.getElementById('htmlInput').value = defaultStuff;
+                updatePreview();
+            }
+        };
+
+        function init() {
+            document.getElementById('htmlInput').value = defaultStuff;
+            updatePreview();
+        }
+
+        function updatePreview() {
+            var htmlContent = document.getElementById('htmlInput').value;
+            var iframe = document.getElementById('previewFrame');
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+
+            if (old != htmlContent) {
+                old = htmlContent;
+                doc.open();
+                doc.write(htmlContent);
+                doc.close();
+            }
+        }
+
+        function downloadPDF() {
+
+            const element = convertIframeToDiv();
+
+            html2pdf().set({
+                margin: 4,
+                filename: 'document.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save();
+        }
+
+        function convertIframeToDiv() {
+            const iframe = document.getElementById('previewFrame');
+            const div = document.createElement('div');
+            div.innerHTML = iframe.contentDocument.body.innerHTML;
+            return div;
+        }
+
+    </script>
+</body>
+
+</html>

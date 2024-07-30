@@ -1,14 +1,14 @@
 const NeuralSeek = require('./services/neuralseek');
 const ElasticSearch = require('./services/elastic_search');
 const ChartJs = require('./services/chartjs');
-const puppeteer = require('puppeteer');
-const path = require('puppeteer');
+const HighChart = require('./services/highchart');
 
 if (require.main === module) {
     (async () => {
         const ns = new NeuralSeek();
         const es = new ElasticSearch();
         const ch = new ChartJs();
+        const hch = new HighChart();
 
         const sections = [
             {
@@ -116,8 +116,6 @@ if (require.main === module) {
         try {
             const fileName = 'Kirkwood Nature Med 2023.pdf';
             const pages = [4];
-            // const fileName = 'Luke Future Oncol 2020 .pdf';
-            // const pages = [3];
 
             const queryLlmTemplate = "query_llm_with_data";
             const elasticResponse = await es.getAllDocuments(fileName, pages);
@@ -129,21 +127,17 @@ if (require.main === module) {
                 let currentQuery = section.query.replace("$1", section.step.toString()).replace("$2", section.type);
 
                 if (section.type === "pie chart") {
-                    let chart_values = await ns.runMaistroTemplateStream(queryLlmTemplate, currentQuery, sections, elasticResponseJson, true);
+                    let chart_values = await ns.runMaistroTemplateStreamSection(queryLlmTemplate, currentQuery, sections, elasticResponseJson, true);
 
                     if (chart_values) {
                         const { labels, data, backgroundColors, borderColors } = JSON.parse(chart_values);
-                        const base64Image = await ch.generateBase64ChartImage(labels, data, backgroundColors, borderColors);
-
-                        // Append Base64 image to htmlString
-                        htmlString += `
-                        <div style="text-align: center;">
-                        <img src="${base64Image}" alt="Image" style="max-width: 100%; height: auto;">
-                        </div><br>
-                        `;
+                        const htmlChart = await hch.generateHighChartHtml(labels, data, backgroundColors, borderColors);
+                        htmlString += htmlChart;
                     }
-                } else {
-                    let result = await ns.runMaistroTemplateStream(queryLlmTemplate, currentQuery, sections, elasticResponseJson, true);
+                } 
+                
+                else {
+                    let result = await ns.runMaistroTemplateStreamSection(queryLlmTemplate, currentQuery, sections, elasticResponseJson, true);
                     htmlString += result + '<br>';
                 }
             }

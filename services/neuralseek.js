@@ -1,13 +1,18 @@
 class NeuralSeek {
-    
+
     constructor() {
         this.baseUrl = 'https://stagingapi.neuralseek.com/v1/Demo_01_Workbooks_Esteban';
         this.apiKey = 'e329b5d4-2b587cef-d6a63c39-d824d703';
+        this.maistroEndpoint = '/maistro';
         this.maistroStreamEndpoint = '/maistro_stream';
         this.seekStreamEndpoint = '/seek';
     }
 
-    async runMaistroTemplateStream(templateName, query, docStructure, jsonData, stream = true) {
+    // async runMaistroTemplate(llm = "gpt-4o", params = {}, stream = true) {
+    //     const { templateName, query, docStructure, jsonData } = params;
+    // }
+
+    async runMaistroTemplateStreamSection(templateName, query, docStructure, jsonData, stream = true) {
         const url = this.baseUrl + this.maistroStreamEndpoint;
         const headers = {
             'accept': stream ? 'text/event-stream' : 'application/json',
@@ -32,9 +37,10 @@ class NeuralSeek {
                 }
             ],
             "options": {
-                // "llm": "claude3-haiku",
+                "llm": "claude3-haiku",
                 // "llm": "claude3-opus",
-                "llm": "gpt-4o",
+                /// "llm": "gpt-4o",
+                // "llm": llm,
                 "user_id": "string",
                 "temperatureMod": 1,
                 "toppMod": 1,
