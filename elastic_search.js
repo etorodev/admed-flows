@@ -4,7 +4,7 @@ class ElasticSearch {
         this.apiKey = 'ApiKey QWhZTWVwQUJPeVZsZ1VZUVNEa0k6VFFGLU1yMXpRQmU1WWdLUEhlUGlVdw==';
     }
 
-    async getAllDocuments(fileName) {
+    async getAllDocuments(fileName, pages) {
         const url = this.baseUrl;
         const headers = {
             'Authorization': this.apiKey,
@@ -22,7 +22,7 @@ class ElasticSearch {
                         },
                         {
                             "terms": {
-                                "page_number": [4]
+                                "page_number": pages
                             }
                         }
                     ]

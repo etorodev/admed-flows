@@ -110,8 +110,12 @@ if (require.main === module) {
 
         try {
             const fileName = 'Kirkwood Nature Med 2023.pdf';
+            const pages = [4];
+            // const fileName = 'Luke Future Oncol 2020 .pdf';
+            // const pages = [3];
+
             const templateName = "query_llm_with_data";
-            const elasticResponse = await es.getAllDocuments(fileName);
+            const elasticResponse = await es.getAllDocuments(fileName, pages);
             const elasticResponseJson = JSON.stringify(elasticResponse);
 
             let htmlString = '';
