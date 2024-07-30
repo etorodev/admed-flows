@@ -1,4 +1,5 @@
 class NeuralSeek {
+    
     constructor() {
         this.baseUrl = 'https://stagingapi.neuralseek.com/v1/Demo_01_Workbooks_Esteban';
         this.apiKey = 'e329b5d4-2b587cef-d6a63c39-d824d703';
@@ -96,6 +97,7 @@ class NeuralSeek {
             throw error;
         }
     }
+
     async runMaistroTemplateStreamHtml(templateName, html_input, stream = true) {
         const url = this.baseUrl + this.maistroStreamEndpoint;
         const headers = {

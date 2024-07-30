@@ -1,10 +1,14 @@
-const NeuralSeek = require('./neuralseek');
-const ElasticSearch = require('./elastic_search');
+const NeuralSeek = require('./services/neuralseek');
+const ElasticSearch = require('./services/elastic_search');
+const ChartJs = require('./services/chartjs');
+const puppeteer = require('puppeteer');
+const path = require('puppeteer');
 
 if (require.main === module) {
     (async () => {
         const ns = new NeuralSeek();
         const es = new ElasticSearch();
+        const ch = new ChartJs();
 
         const sections = [
             {
@@ -58,13 +62,15 @@ if (require.main === module) {
                 query: `We are creating a Case Study Summary based on a JSON knowledge base structure.
                         It will have the document name, page and paragraphs content in the JSON below.
                         Now we are at the section number $1 for a Case Study Summary which is a $2 to show some highlighted numeric data the text.
-                        The output is just a HTML string with no indications. Further indications are useless.
-                        Use Lato font to make content look modern and simple. Use the font CDN.
+                        Add the generate values for the $1 to a JSON structure.
+                        The output is just a JSON object with no indications. Further indications are useless.
 
-                        Collect numeric data to create a pie chart using chartjs including its CDN.
-                        Make it 300px width and height. Set chartjs responsiveness option to False.
-                        Center the content of the chart inside a div and use margin space.
-                        Add the corresponding document name and its page number reference in the chart.`
+                        Collect numeric data to create the params for a pie chart using chartjs.
+                        The params are
+                            - labels: List of string labels ["label1", "label2"] 
+                            - data: List of int data [1, 2] 
+                            - backgroundColors: List of string background colors ["#hex1", "#hex2"]
+                            - borderColors: List of string border colors ["#hex1", "#hex2"]`
             },
             {
                 step: 6,
@@ -82,30 +88,29 @@ if (require.main === module) {
             },
             {
                 step: 7,
-                type: "reference list",
-                query: `We are creating a Case Study Summary based on a JSON knowledge base structure.
-                        It will have the document name, page and paragraphs content in the JSON below.
-                        Now we are at the section number $1 for a Case Study Summary which is a $2 to list the references from the text.
-                        Use the whole row width to show this content.
-                        The output is just a HTML string with no indications. Further indications are useless.
-                        Use Lato font to make content look modern and simple. Use the font CDN. It should be a section apart from the table
-                        
-                        Create a HTML formated list to show the name, link and page format and keep it. Avoid repeating.
-                        Make sure to provide a References title and be in a separate section and left align the list text`
-            },
-            {
-                step: 8,
                 type: "conclusions",
                 query: `We are creating a Case Study Summary based on a JSON knowledge base structure.
                         It will have the document name, page and paragraphs content in the JSON below.
                         Now we are at the section number $1 for a Case Study Summary which is a $2 section to conclude the text.
-                        Use the whole row width to show this content.
                         The output is just a HTML string with no indications. Further indications are useless
                         Use Lato font to make content look modern and simple. Use the font CDN.
                         
                         Create a HTML Conclusions section based on the content. It should be a left aligned text.
                         Make sure to provide a Conclusions title and be in a separate section and left align the list text`
-            }
+            },
+            {
+                step: 8,
+                type: "reference list",
+                query: `We are creating a Case Study Summary based on a JSON knowledge base structure.
+                        It will have the document name, page and paragraphs content in the JSON below.
+                        Now we are at the section number $1 for a Case Study Summary which is a $2 to list the references from the text.
+                        The output is just a HTML string with no indications. Further indications are useless.
+                        Use Lato font to make content look modern and simple. Use the font CDN. It should be a section apart from the table
+                        
+                        Create a HTML formated list to show the name, link and page format and keep it. 
+                        Avoid repeating references and make different general references.
+                        Make sure to provide a References title and be in a separate section and left align the list text`
+            },
         ];
 
         try {
@@ -114,22 +119,35 @@ if (require.main === module) {
             // const fileName = 'Luke Future Oncol 2020 .pdf';
             // const pages = [3];
 
-            const templateName = "query_llm_with_data";
+            const queryLlmTemplate = "query_llm_with_data";
             const elasticResponse = await es.getAllDocuments(fileName, pages);
             const elasticResponseJson = JSON.stringify(elasticResponse);
 
+            // Iterate sections to generate HTML
             let htmlString = '';
             for (const section of sections) {
                 let currentQuery = section.query.replace("$1", section.step.toString()).replace("$2", section.type);
-                let result = await ns.runMaistroTemplateStream(templateName, currentQuery, sections, elasticResponseJson, true);
-                htmlString += result + '<br>';
+
+                if (section.type === "pie chart") {
+                    let chart_values = await ns.runMaistroTemplateStream(queryLlmTemplate, currentQuery, sections, elasticResponseJson, true);
+
+                    if (chart_values) {
+                        const { labels, data, backgroundColors, borderColors } = JSON.parse(chart_values);
+                        const base64Image = await ch.generateBase64ChartImage(labels, data, backgroundColors, borderColors);
+
+                        // Append Base64 image to htmlString
+                        htmlString += `
+                        <div style="text-align: center;">
+                        <img src="${base64Image}" alt="Image" style="max-width: 100%; height: auto;">
+                        </div><br>
+                        `;
+                    }
+                } else {
+                    let result = await ns.runMaistroTemplateStream(queryLlmTemplate, currentQuery, sections, elasticResponseJson, true);
+                    htmlString += result + '<br>';
+                }
             }
-            console.log(htmlString)
-
-            // const templateName2 = "refine_html";
-            // let refinedHtmlString = await ns.runMaistroTemplateStreamHtml(templateName2, htmlString, true);
-            // console.log(refinedHtmlString);
-
+            console.log(htmlString);
         } catch (e) {
             console.error(`An error occurred: ${e.message}`);
         }
